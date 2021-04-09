@@ -52,7 +52,6 @@ Z = BLP_instruments(X, id, cdid, firmid)
 
 # Minimize objective function -----------------------------------------------------
 
-
 using Optim             # for minimization functions. see: http://julianlsolvers.github.io/Optim.jl/v0.9.3/user/config/
 using BenchmarkTools    # for timing/benchmarking functions
 
@@ -61,11 +60,12 @@ using BenchmarkTools    # for timing/benchmarking functions
 θ₂ = [0.0, 0.0, 0.0, 0.0, 0.0]
 
 # test run and timing of objective function
-Q, θ₁, ξ = demand_objective_function(θ₂,x₁,share,Z,v,cdid)   # returns objective function value, and θ₂ and ξ estiamtes 
+Q, θ₁, ξ = demand_objective_function(θ₂,x₁,share,Z,v,cdid)   # returns objective function value, and θ₁ and ξ estiamtes 
 @btime demand_objective_function($θ₂,$x₁,$share,$Z,$v,$cdid) 
 # v1-3: initially 55 seconds per call, later ~20 seconds
 # v4: 6.7 seconds per call (issue with adjoints in vector of random draws)
-# v5: 2.6 seconds per call 
+# v5: 2.6 seconds per call (parallelized lower level sigma loop instead of higher-level objective function) 
+# v6: 2.3 seconds per call
 
 # optimization
 # temporary function that takes only θ₂ and returns objective function value
@@ -74,7 +74,8 @@ f(θ₂) = demand_objective_function(θ₂,x₁,share,Z,v,cdid)[1]
 result = optimize(f, θ₂, NelderMead(), Optim.Options(x_tol=1e-2, iterations=100, show_trace=true, show_every=10))
 # v4: 6400s / 107 minutes to converge at tol 1e-2
 # v5: 4700s / 79 minutes / 488 iterations / 841 calls to converge at tol 1e-2
-# note: 100 iterations (15 minutes) is sufficient get a close estimate.  
+# v6: 4500s / 75 minutes / 488 iterations / 841 calls to converge at tol 1e-2
+# note: 100 iterations (<15 minutes) is sufficient get a close estimate.  
 
 # get optimal θ₂ and θ₁ values
 θ₂ = Optim.minimizer(result)

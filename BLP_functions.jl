@@ -44,7 +44,7 @@ function demand_objective_function(θ₂,X,s,Z,v,m_id)
 markets = unique(m_id)
 
 # solve for delta in each market
-for market in markets
+Threads.@threads for market in markets # run in parallel with Threads
 
     # get observables and pre-selected random draws for given market
     xₘ = X[m_id.==market, Not(6) ]        # observed features. excluding "space" the same way as matlab code to aid estimation of random effects.
@@ -93,8 +93,8 @@ end
 # GMM objective fuction:
 # Q(θ) = G(θ)'*W*G(θ)
 
-# weighting matrix
-W = inv(Z'Z)
+# weighting matrix. 
+W = inv(Z'Z) # Z'Z is optimal if ξ(θ) term is i.i.d. (normally the error term)
 # GMM objective function value
 Q = (Z'ξ)' * W * (Z'ξ)
 
@@ -145,7 +145,7 @@ for (individual, v_draws) in enumerate(V)
 end
 
 # estimate market share for each product j in the market.
-Threads.@threads for j in 1:n_products # run in parallel with Threads
+for j in 1:n_products
 
     # function for the interior of the integral: σ = ∫exp(δⱼ+μᵢⱼ) / 1 + Σₖ exp(δₖ + μᵢₖ) * f(νᵢ)dνᵢ
     integral_interior(i) = exp(δ[j] + μ[j,i]) / (1 + sum(exp.(δ + μ[:,i])))
