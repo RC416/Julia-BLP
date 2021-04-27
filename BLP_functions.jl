@@ -81,7 +81,14 @@ Threads.@threads for market in markets # run in parallel with Threads
 end
 
 # back out the θ₁ value implied by delta. Note "space" not used in X. Lines 22-25 of GMM object in Matlab code.
-θ₁ = inv((X'Z)*inv(Z'Z)*(X'Z)') * (X'Z)*inv(Z'Z)*(δ'Z)'
+# we have δ = Xθ₁' 
+# without instruments: θ₁ = (X'X)⁻¹X'δ                    (OLS)
+# with instruments: ̂X = Z (Z'Z)⁻¹Z'X   and θ₁ = (̂X'̂X)⁻¹̂Xδ   (2SLS)
+# sub in for 2SLS: θ₁ = (̂X'̂X)⁻¹̂Xδ = ([(Z'Z)⁻¹Z'X]'[(Z'Z)⁻¹Z'X])⁻¹[(Z'Z)⁻¹Z'X]*δ
+# θ₁ = inv((Z*inv(Z'Z)*Z'X)'*(Z*inv(Z'Z)*Z'X))*(Z*inv(Z'Z)*Z'X)'*δ
+# which reduces to the expression:
+θ₁ = inv((X'Z)*inv(Z'Z)*(X'Z)') * (X'Z)*inv(Z'Z)*Z'δ
+
 
 # 2. using δ, calculate unobserved demand ξⱼ(θ) = δ-xⱼβ for all markets
 ξ = δ - X*θ₁
@@ -184,5 +191,19 @@ Z = X # not actual instruments
 m_id = Vector(blp_data[!,"cdid"])
 
 demand_objective_function(θ₂,X,s,Z,v,m_id) =#
+
+function gradient()
+
+
+    # ∂Q_∂ξ = 2 * Z * W * (Z'ξ)
+    # 2217x1
+
+    # ∂A'x/∂x = A'
+    # ∂x'A/∂x = A
+
+end
+
+
+
 
 end # end module
