@@ -27,14 +27,14 @@ X:  2217x6 matrix of observables (including price)
 s:  2217x1 vector of product market shares
 Z:  2217x15 vector of BLP instruments
 v:  2217x250 vector of random draws from joint normal
-m_id: 2217x1 vector of market id for each product/observation (cdid, market = years in this dataset)
+market_id: 2217x1 vector of market id for each product/observation (cdid, market = years in this dataset)
 Used to track which products are in which markets since markets are solved individually.
 
 Does not use θ₁ as an input. Rather, backs out θ₁ from θ₂ in the step 2.
 This allows for optimization over only the θ₂ coefficients (5) without including θ₁ (6 others).
 =#
 
-function demand_objective_function(θ₂,X,s,Z,v,m_id)
+function demand_objective_function(θ₂,X,s,Z,v,market_id)
 
 # 1. solve for delta
 # initialize vector to hold all market deltas
@@ -105,6 +105,10 @@ W = inv(Z'Z) # Z'Z is optimal if ξ(θ) term is i.i.d. (normally the error term)
 # GMM objective function value
 Q = (Z'ξ)' * W * (Z'ξ)
 
+# save global value of important variables so that the gradient function can access them
+global ξ_global = ξ
+global δ_global = X*θ₁
+
 # 4. return objective function value and other useful values.
 return Q, θ₁, ξ
 end
@@ -159,8 +163,8 @@ for j in 1:n_products
 
     # calculation of new σⱼ using Monty Carlo integration 
     # apply integral_interior to vector of individual indices 
-    individuals = [i for i in 1:n_individuals]
-    σ[j] = sum(integral_interior.(individuals)) * 1 / length(individuals)
+    # σ[j] = sum(integral_interior.(1:n_individuals)) * 1 / length(1:n_individuals)
+    σ[j] = mean(integral_interior.(1:n_individuals))
 end
 
 # return estimated market shares
@@ -192,18 +196,3 @@ m_id = Vector(blp_data[!,"cdid"])
 
 demand_objective_function(θ₂,X,s,Z,v,m_id) =#
 
-function gradient()
-
-
-    # ∂Q_∂ξ = 2 * Z * W * (Z'ξ)
-    # 2217x1
-
-    # ∂A'x/∂x = A'
-    # ∂x'A/∂x = A
-
-end
-
-
-
-
-end # end module
