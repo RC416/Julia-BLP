@@ -12,11 +12,13 @@ using LinearAlgebra     # basic math
 using Optim             # for minimization
 
 # set working directory
-cd("C:\\Users\\Ray\\OneDrive\\Economics\\Course Material\\ECO2404 - Empirical\\Problem Set 1 Julia")
+cd("C:\\Users\\Ray\\Documents\\GitHub\\Julia BLP\\Julia-BLP")
+
+
 
 # load data
-blp_data = CSV.read("key data files\\BLP_product_data.csv", DataFrame)
-v = Matrix(CSV.read("key data files\\BLP_v.csv", DataFrame, header=0))
+blp_data = CSV.read("BLP_product_data.csv", DataFrame)
+v = Matrix(CSV.read("BLP_v.csv", DataFrame, header=0))
 
 #= blp data contains the following variables
 

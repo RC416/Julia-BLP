@@ -15,8 +15,7 @@ Uses Optim optimization package to find the θ₂ that minimizes the function.
 =#
 
 # Load key functions and packages -------------------------------------------------
-
-cd("C:\\Users\\Ray\\OneDrive\\Economics\\Course Material\\ECO2404 - Empirical\\Problem Set 1 Julia\\Submission")
+cd("C:\\Users\\Ray\\Documents\\GitHub\\Julia BLP\\Julia-BLP")
 
 include("BLP_functions.jl")    # module with custom BLP functions (objective function and σ())
 include("BLP_instruments.jl")  # module to calculate BLP instruments
