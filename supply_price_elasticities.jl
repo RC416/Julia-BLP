@@ -115,8 +115,8 @@ Threads.@threads for j in 1:n_products # run loop in parallel with Threads. redu
 
     # estimate with Monty Carlo integration over all individuals in vₘ
     # integral_interior() is applied to each of the ~5000 sets of 5 vᵢ values in vₘ
-    # ∂σⱼ_∂pⱼ = mean(integral_interior.(vₘ))
-    ∂σⱼ_∂pⱼ = sum(integral_interior.(vₘ)) * 1 / length(vₘ)
+    ∂σⱼ_∂pⱼ = mean(integral_interior.(vₘ))
+    # equivalently: ∂σⱼ_∂pⱼ = sum(integral_interior.(vₘ)) * 1 / length(vₘ)
 
     # assign own price elasticitiy to matrix of price elasticities (along the diagonal) 
     Δ[j,j] = -∂σⱼ_∂pⱼ
@@ -157,8 +157,8 @@ Threads.@threads for j in 1:n_products  # run loop in parallel with Threads. red
 
             # estimate with Monty Carlo integration over all individuals in V
             # integral_interior() is applied to each of the sets of 5 vᵢ values in vₘ
-            # ∂σⱼ_∂pₖ = mean(integral_interior.(vₘ))
-            ∂σⱼ_∂pₖ = sum(integral_interior.(vₘ)) * 1 / length(vₘ)
+            ∂σⱼ_∂pₖ = mean(integral_interior.(vₘ))
+            # equivalently: ∂σⱼ_∂pₖ = sum(integral_interior.(vₘ)) * 1 / length(vₘ)
             
             # assign cross price elasticitiy to matrix of price elasticities 
             Δ[k,j] = -∂σⱼ_∂pₖ

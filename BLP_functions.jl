@@ -49,7 +49,8 @@ Threads.@threads for market in markets # run in parallel with Threads
     # get observables and pre-selected random draws for given market
     xₘ = X[market_id.==market, Not(6) ]        # observed features. excluding "space" the same way as matlab code to aid estimation of random effects.
     sₘ = s[market_id.==market,:]               # market share 
-    vₘ = v[market,:]                      # vector of 250 pre-selected random draws (=> 50 simulated individuals)
+    #vₘ = v[market,:]                      # vector of 250 pre-selected random draws (=> 50 simulated individuals)
+    vₘ = v[market,:,:]                         # 50x5 vector of 5 pre-selected random draws for 50 simulated individuals
 
     n_products = length(sₘ)               # number of products in given market
     δₘ = zeros(n_products)                # geuss value of delta from main vector
@@ -106,8 +107,8 @@ W = inv(Z'Z) # Z'Z is optimal if ξ(θ) term is i.i.d. (normally the error term)
 Q = (Z'ξ)' * W * (Z'ξ)
 
 # save global value of important variables so that the gradient function can access them
-global ξ_global = ξ
-global δ_global = X*θ₁
+#global ξ_global = ξ
+#global δ_global = X*θ₁
 
 # 4. return objective function value and other useful values.
 return Q, θ₁, ξ
@@ -132,28 +133,20 @@ Inputs:
 δ: nx1 vector. represents xβ + ξ. One for each product in given market
 θ₂: 5x1 vector of σᵛ coefficients. One for each x variable
 X: nx5 matrix of observables for all n products in a market. Drops random coefficient for "space" to aid estimation.
-v: 250x1 vector of random draws from joint normal mean 0 variance 1. Must add 5x the number of 
-individuals that you want to simulate.
-Single row from the file "v" used in the matlab code for each market. Represents 5 random draws 
-for each individual (so simulating 50 individuals). One random draw per each of the σᵛ per person. =#
+v: 50x5 vector of random draws from joint normal mean 0 variance 1. 
+    One random draw per each of the 5 θ₂ coefficents per person. =#
 
 function σ(δ,θ₂,X,v)
 
 # get number of products in the given market
-n_products = length(δ)
+n_products = length(δ) 
 # initialize predicted market share vector
 σ = zeros(n_products) 
-
-# get sets of 5 random values for each of the 50 individuals
-n_individuals = 50
-V = [[v[i], v[i+50], v[i+100], v[i+150], v[i+200]] for i in 1:n_individuals] 
+# get number of simulated individuals 
+n_individuals = size(v,1)
 
 # calculate μⱼᵢ values for each individual and each product
-μ = zeros(n_products, n_individuals)
-# calculate the set of μⱼᵢ values for each product (row) for each individual (column)
-for (individual, v_draws) in enumerate(V)
-    μ[:,individual] = X * (θ₂ .* v_draws)
-end
+μ = X * (v .* θ₂')'     # = μⱼᵢ = ∑ₖ xⱼₖ * vₖᵢ * σₖ      where σₖ is one of the θ₂ coefficients
 
 # estimate market share for each product j in the market.
 for j in 1:n_products
@@ -170,30 +163,5 @@ end
 # return estimated market shares
 return σ
 end
-
-#= test code for σ()
-
-market=1
-xₘ = X[cdid.==market,:]
-θ₂ = [1,1,1,1,1]
-v = Matrix(CSV.read("key data files\\BLP_v.csv", DataFrame, header=0))
-δ = (x₁*θ₁)[cdid.==market,:]
-
-σ(δ,θ₂,xₘ,v[1,:])=#
-
-
-#= test code for objective_function()
-    
-blp_data = CSV.read("key data files\\BLP_product_data.csv", DataFrame)
-v = Matrix(CSV.read("key data files\\BLP_v.csv", DataFrame, header=0))
-
-θ₂ = [1,1,1,1,1]
-
-X = Matrix(blp_data[!, ["price","const","hpwt","air","mpg","share"]])
-s = Vector(blp_data[!,"share"])
-Z = X # not actual instruments
-m_id = Vector(blp_data[!,"cdid"])
-
-demand_objective_function(θ₂,X,s,Z,v,m_id) =#
 
 end # end module 
