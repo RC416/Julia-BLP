@@ -31,7 +31,10 @@ using Statistics        # for mean
 
 # Load key data ------------------------------------------------------------------
 blp_data = CSV.read("BLP_product_data.csv", DataFrame) # dataframe with all observables 
-v = Matrix(CSV.read("BLP_v.csv", DataFrame, header=0)) # pre-selected random draws from joint normal
+v_50 = Matrix(CSV.read("random_draws_50_individuals.csv", DataFrame, header=0)) # pre-selected random draws from joint normal to simulate 50 individuals
+# reshape to 3-d arrays: v(market, individual, coefficient draw) 
+v_50 = reshape(v_50, (20,50,5)) # 20 markets, 50 individuals per market, 5 draws per invididual (one for each θ₂ random effect coefficient)
+
 
 # Load X variables. 2217x5 and 2217x6 matrices respectively
 X = Matrix(blp_data[!, ["const","hpwt","air","mpg","space"]]) # exogenous X variables
@@ -59,8 +62,8 @@ using BenchmarkTools    # for timing/benchmarking functions
 θ₂ = [0.0, 0.0, 0.0, 0.0, 0.0]
 
 # test run and timing of objective function
-Q, θ₁, ξ = demand_objective_function(θ₂,x₁,share,Z,v,cdid)   # returns objective function value, and θ₁ and ξ estiamtes 
-@btime demand_objective_function($θ₂,$x₁,$share,$Z,$v,$cdid) 
+Q, θ₁, ξ = demand_objective_function(θ₂,x₁,share,Z,v_50,cdid)   # returns objective function value, and θ₁ and ξ estiamtes 
+@btime demand_objective_function($θ₂,$x₁,$share,$Z,$v_50,$cdid)  
 # v1-3: initially 55 seconds per call, later ~20 seconds
 # v4: 6.7 seconds per call (issue with adjoints in vector of random draws)
 # v5: 2.6 seconds per call (parallelized lower level sigma loop instead of higher-level objective function) 

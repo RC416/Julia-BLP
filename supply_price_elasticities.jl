@@ -51,18 +51,26 @@ module supply_price_elasticities
 export price_elasticities
 
 # required modules 
-using DataFrames  # for Not() and sample data
+using DataFrames        # for Not() and sample data
+using LinearAlgebra     # basic math
+using Statistics        # for mean()
 
-
-function price_elasticities(θ₁, θ₂, X, s, v, market_id, firm_id)
+function price_elasticities(θ₁, θ₂, X, s, v_diag, v_off_diag, market_id, firm_id)
 #= 
 θ₁: 6x1 vector of coefficients where the price coefficient is first
 θ₂: 5x1 vector of random coefficients where the price coefficient is first
 X : 2217x6 matrix of observables where price is the frist column
 s : 2217x1 vector of observed market shares
-v : 2217x250 vector of pre-selected random draws from joint normal
+v_diag : 5000x5 vector of pre-selected random draws from joint normal to simulate 5000 or 
+    some large number of individuals. 
+v_off_diag : 50x5 vector of pre-selected random draws from joint normal to simulate 50 or
+    some number of individuals.
 market_id: 2217x1 vector of market id for each product/observation  (cdid = market = year in this dataset)
 firm_id: 2217x1 vector of firm id for each product.
+
+for v_diag/v_off_diag, the diagonal terms are much larger so may want more precision by simulating a 
+larger number of individuals. Off diagnoal terms are smaller and much more numerous, so can use
+fewer individuals to reduce computation time.
 =#
 
 # get price coefficient
@@ -91,33 +99,25 @@ Corresponds to the diagonal of Δ
 # loop through all products
 Threads.@threads for j in 1:n_products # run loop in parallel with Threads. reduced time ~75x.
 
+    # get market id for product j
     market = market_id[j]
 
     # get observables and indiviudals
     xⱼ = X[j,:]                    # observables for product j 
     xₘ = X[market_id.==market,:]   # observables of all products in market with product j
-    vₘ = v[market_id.==market,:]   # matrix of ~100x250 pre-selected random draws (=> 50 individuals) per product*
-                                   # *using ~5000 individuals instead of 50 here to increase precision
-
-    # build vector of sets of 5 individual draws for 50 individuals for each product in a market (~5000 individuals per market)
-    # extra draws here to imporove precision of estimate since the own price elasticity is by far most important. 
-    n_individuals = Int(size(vₘ,2)/5)
-    n_rows = size(vₘ, 1) # number of sets of 50 individuals. ~100 per market => ~5000 individuals total.
-    
-    # build matrix of ~5000 sets of 5 individual draws 
-    V = [vₘ[r,[i,i+50,i+100,i+150,i+200]] for i in 1:n_individuals for r in 1:n_rows] 
-
-
+    vₘ = v_diag[market,:,:]        # matrix of 5000x5 pre-selected random draws (=> 5000 individuals)
+   
     # function defining the interior of the sigma function integral 
     𝒯(vᵢ) = exp(xⱼ'θ₁ + xⱼ[Not(6)]'*(θ₂.*vᵢ)) / (1 + sum(exp.(xₘ*θ₁ + xₘ[:,Not(6)]*(θ₂.*vᵢ)))) 
 
     # interior of the own price elasticity function
     integral_interior(vᵢ) = (α + vᵢ[1]*σᵛₚ) * 𝒯(vᵢ) * (1 - 𝒯(vᵢ))
 
-    # estimate with Monty Carlo integration over all individuals in V
-    # integral_interior() is applied to each of the ~5000 sets of 5 vᵢ values in V
-    ∂σⱼ_∂pⱼ = sum(integral_interior.(V)) * 1 / length(V)
-    
+    # estimate with Monty Carlo integration over all individuals in vₘ
+    # integral_interior() is applied to each of the ~5000 sets of 5 vᵢ values in vₘ
+    # ∂σⱼ_∂pⱼ = mean(integral_interior.(vₘ))
+    ∂σⱼ_∂pⱼ = sum(integral_interior.(vₘ)) * 1 / length(vₘ)
+
     # assign own price elasticitiy to matrix of price elasticities (along the diagonal) 
     Δ[j,j] = -∂σⱼ_∂pⱼ
 
@@ -147,18 +147,7 @@ Threads.@threads for j in 1:n_products  # run loop in parallel with Threads. red
             xⱼ = X[j,:]                         # observables for product j
             xₖ = X[k,:]                         # observables for product k 
             xₘ = X[market_id.==market_id[j],:]  # observables of all products in market with product j and k
-            vₘ = v[market_id.==market_id[j],:]  # vector of 250 pre-selected random draws (=> 50 individuals) per product*
-                                                # *using more many more individuals here to increase precision
-
-            # build vector of sets of 5 individual draws for 50 individuals
-            n_individuals = Int(size(vₘ,2)/5) # number of individuals encoded by each row of v. (250 random draws per row => 50 individuals)
-            n_rows=2 # number of multiples of 50 individuals. n_rows = 2 => draws for 100 individuals. 
-
-            # for greatest precision use this instead. reduces speed from 90 seconds to 22 minutes (15x slower). 
-            #n_rows = size(vₘ, 1) # use to set 50 draws per product. ~100 products per market => ~5000 individuals.
-
-            # build matrix of 100 sets of 5 individual draws
-            V = [vₘ[r,[i,i+50,i+100,i+150,i+200]] for i in 1:n_individuals for r in 1:n_rows] 
+            vₘ = v_off_diag[market_id[j],:,:]     # matrix of 50x5 pre-selected random draws (=> 50 individuals)
 
             # interior of sigma function integral for products j or k
             𝒯(xⱼ,vᵢ) = exp(xⱼ'θ₁ + xⱼ[Not(6)]'*(θ₂.*vᵢ)) / (1 + sum(exp.(xₘ*θ₁ + xₘ[:,Not(6)]*(θ₂.*vᵢ)))) 
@@ -167,8 +156,9 @@ Threads.@threads for j in 1:n_products  # run loop in parallel with Threads. red
             integral_interior(vᵢ) = (α + vᵢ[1]*σᵛₚ) * 𝒯(xⱼ,vᵢ) * 𝒯(xₖ,vᵢ)
 
             # estimate with Monty Carlo integration over all individuals in V
-            # integral_interior() is applied to each of the sets of 5 vᵢ values in V
-            ∂σⱼ_∂pₖ = sum(integral_interior.(V)) * 1 / length(V)
+            # integral_interior() is applied to each of the sets of 5 vᵢ values in vₘ
+            # ∂σⱼ_∂pₖ = mean(integral_interior.(vₘ))
+            ∂σⱼ_∂pₖ = sum(integral_interior.(vₘ)) * 1 / length(vₘ)
             
             # assign cross price elasticitiy to matrix of price elasticities 
             Δ[k,j] = -∂σⱼ_∂pₖ

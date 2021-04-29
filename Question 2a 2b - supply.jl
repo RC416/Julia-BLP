@@ -21,7 +21,7 @@ using DataFrames        # loading data
 using LinearAlgebra     # basic math
 
 # load data and set up variables
-cd("C:\\Users\\Ray\\OneDrive\\Economics\\Course Material\\ECO2404 - Empirical\\Problem Set 1 Julia\\Submission")
+cd("C:\\Users\\Ray\\Documents\\GitHub\\Julia BLP\\Julia-BLP")
 
 # main dataset
 blp_data = CSV.read("BLP_product_data.csv", DataFrame)
@@ -41,7 +41,15 @@ market_id = Vector(blp_data[!, "cdid"])
 θ₂ = [ 0.172, -2.528, 0.763, 0.589,  0.595]
 
 # pre-selected random draws
-v = Matrix(CSV.read("BLP_v.csv", DataFrame, header=0))
+v_50 = Matrix(CSV.read("random_draws_50_individuals.csv", DataFrame, header=0)) # pre-selected random draws from joint normal to simulate 50 individuals
+v_5000 = Matrix(CSV.read("random_draws_5000_individuals.csv", DataFrame, header=0)) # pre-selected random draws from joint normal to simulate 50 individuals
+
+# reshape to 3-d arrays: v(market, individual, coefficient draw) 
+# the sets of 50 individuals (v_50) is used in most places to estimate market share. 50 is a compromise between speed and precision.
+# the sets of 5000 individuals (v_5000) is used for the diagonal of the price elastiticty matrix in supply price elasticities which
+# only needs to be calculated once, so greater precision can be achieved. 
+v_50 = reshape(v_50, (20,50,5)) # 20 markets, 50 individuals per market, 5 draws per invididual (one for each θ₂ random effect coefficient)
+v_5000 = reshape(v_5000, (20,5000,5)) # 20 markets, 5000 individuals per market, 5 draws per invididual (one for each θ₂ random effect coefficient)
 
 #= 
 Question 2a - marginal cost pricing
@@ -99,8 +107,8 @@ by estimating supply and demand simultaneously.
 include("supply_price_elasticities.jl")
 using .supply_price_elasticities
 
-# calculate matrix of price elasticities (takes ~2 minutes)
-Δ = price_elasticities(θ₁, θ₂, x₁, S, v, market_id, firm_id)
+# calculate matrix of price elasticities
+Δ = price_elasticities(θ₁, θ₂, x₁, S, v_5000, v_50, market_id, firm_id)
 
 # get inverse
 Δ⁻¹ = inv(Δ)

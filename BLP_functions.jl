@@ -41,14 +41,14 @@ function demand_objective_function(θ₂,X,s,Z,v,market_id)
 δ = zeros(length(s))
 
 # get id of each market
-markets = unique(m_id)
+markets = unique(market_id)
 
 # solve for delta in each market
 Threads.@threads for market in markets # run in parallel with Threads
 
     # get observables and pre-selected random draws for given market
-    xₘ = X[m_id.==market, Not(6) ]        # observed features. excluding "space" the same way as matlab code to aid estimation of random effects.
-    sₘ = s[m_id.==market,:]               # market share 
+    xₘ = X[market_id.==market, Not(6) ]        # observed features. excluding "space" the same way as matlab code to aid estimation of random effects.
+    sₘ = s[market_id.==market,:]               # market share 
     vₘ = v[market,:]                      # vector of 250 pre-selected random draws (=> 50 simulated individuals)
 
     n_products = length(sₘ)               # number of products in given market
@@ -77,7 +77,7 @@ Threads.@threads for market in markets # run in parallel with Threads
     end
 
     # append this market's deltas to the vector of all deltas
-    δ[m_id.==market] = δₘ
+    δ[market_id.==market] = δₘ
 end
 
 # back out the θ₁ value implied by delta. Note "space" not used in X. Lines 22-25 of GMM object in Matlab code.
@@ -145,7 +145,7 @@ n_products = length(δ)
 σ = zeros(n_products) 
 
 # get sets of 5 random values for each of the 50 individuals
-n_individuals = Int(length(v) / 5)
+n_individuals = 50
 V = [[v[i], v[i+50], v[i+100], v[i+150], v[i+200]] for i in 1:n_individuals] 
 
 # calculate μⱼᵢ values for each individual and each product
@@ -196,3 +196,4 @@ m_id = Vector(blp_data[!,"cdid"])
 
 demand_objective_function(θ₂,X,s,Z,v,m_id) =#
 
+end # end module 

@@ -14,11 +14,8 @@ using Optim             # for minimization
 # set working directory
 cd("C:\\Users\\Ray\\Documents\\GitHub\\Julia BLP\\Julia-BLP")
 
-
-
 # load data
 blp_data = CSV.read("BLP_product_data.csv", DataFrame)
-v = Matrix(CSV.read("BLP_v.csv", DataFrame, header=0))
 
 #= blp data contains the following variables
 
