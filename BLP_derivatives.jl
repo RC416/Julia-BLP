@@ -78,8 +78,8 @@ s : 2217x1 vector of observed market shares
 v : 2217x250 vector of pre-selected random draws from joint normal
 market_id: 2217x1 vector of market id for each product/observation  (cdid = market = year in this dataset)
 
-ξ_global : 2217x1 vector of residuals from the objective function
-δ_global : 2217x1 vector δ calculated from X*θ₁ in the objective function
+ξ : 2217x1 vector of residuals from the objective function. 
+δ : 2217x1 vector δ calculated from X*θ₁ in the objective function
 
 θ₂ must be the only dynamic input. The optimization function will input the current θ₂ values and expect
 the gradient of the function at θ₂. ξ and δ are stored global by the objective function so that they can
@@ -92,7 +92,7 @@ be accessed by the gradient.
 
 
 
-function gradient(θ₂,X,s,Z,v,market_id, ξ_global, δ_global)
+function gradient(θ₂,X,s,Z,v,market_id, ξ, δ)
    # ∂Q_∂ξ = 2 * [Z'ξ]' * W
     # 1x2217
 
@@ -103,8 +103,9 @@ end
 
 # Set up
 
+# get ξ and δ values from objective function
 ξ = ξ_global
-δ = δ_global
+δ = X*θ₁_global
 
 
 
@@ -118,20 +119,76 @@ W = inv(Z'Z)
 
 # 2 - find the derivatives ∂σ/∂δ and ∂σ/∂θ₂
 
-# get number of products in all markets
+# get number of products in all markets and number of simulated individuals
 n_products = size(X,1)
+n_individuals = size(v,2)
+
+# calculate μᵢⱼₜ for each of the simulated individuals in each market
+μ = zeros(n_products, n_individuals)
+for market in unique(market_id)
+    # μⱼᵢ = ∑ₖ xⱼₖ * vₖᵢ * σₖ   where σₖ is one of the θ₂ coefficients  
+    μ[market_id.==market,:] = X[market_id.==market,Not(6)] * (v_50[market,:,:] .* θ₂')' 
+end
 
 # initialize empty matrix of derivatives
 ∂σ_∂δ = zeros(n_products, n_products)
 
-# initialize μᵢⱼₜ which is calculated in each market
-μ = zeros(n_products, n_individuals)
 
+# the interior of the sigma market share integral
+𝒯(j,i) = exp(δ[j] + μ[j,i]) / (1 + sum(exp.(δ[market_id.==market] + μ[market_id.==market,i])))
+
+# derivatives of the interior of the integral for ∂σ/∂δ
+σ_δ_integral_interior_diag(i) = 𝒯(j,i) * (1 - 𝒯(j,i))   # for diagonal terms where j=k
+σ_δ_integral_interior_off_diag(i) = -𝒯(j,i) * 𝒯(k,i)    # for off diagonal terms j≠k
+
+
+# 2:30 not parallel
+# 1:30 parallel
+
+Threads.@threads for market in unique(market_id)
+
+    # get product ids for given market
+    products = findall(market_id.==market)
+
+    # get market id
+    market = market_id[j]
+
+    # get observables and indiviudals
+    xₘ = X[market_id.==market,:]     # observables of all products in market with product j
+
+    for j in products
+        for k in products
+
+            if j == k
+
+                ∂σ_∂δ[j,k] = mean(σ_δ_integral_interior_diag.(1:n_individuals))
+
+            end
+
+            if j != k 
+
+                ∂σ_∂δ[j,k] = mean(σ_δ_integral_interior_off_diag.(1:n_individuals))
+
+            end
+
+        end
+    end
+end
+
+
+
+
+
+
+
+
+# version 1: ~1:30 with parallel. (3 hours+ without)
+# loops through the whole matrix.
 
 # loop through all products (rows)
-Threads.@threads for j in 1:n_products    # started at 9:23
+Threads.@threads for j in 1:n_products    # started at 9:23 - took over 3 hours then failed
     # loop through all products (columns)
-    for k in 1:n_products 
+    for k in 1:n_products
         # when products are in the same market
         if (market_id[j]==market_id[k])
 
@@ -139,34 +196,29 @@ Threads.@threads for j in 1:n_products    # started at 9:23
             market = market_id[j]
             
             # get observables and indiviudals
-            xₘ = X[market_id.==market,:]   # observables of all products in market with product j
-            vₘ = v[market_id.==market,:]   # matrix of ~100x250 pre-selected random draws (=> 50 individuals)
+            xₘ = X[market_id.==market,:]     # observables of all products in market with product j
 
-            # build vector of sets of 5 individual draws for 50 individuals
-            n_individuals = 50
-            # build matrix of 50 sets of 5 individual draws 
-            V = [vₘ[1,[i,i+50,i+100,i+150,i+200]] for i in 1:n_individuals] 
-
-            # calculate the set of μⱼᵢ values for each product (row) for each individual (column)
-            for (individual, v_draws) in enumerate(V)
-                μ[market_id.==market, individual] = xₘ[:,Not(6)] * (θ₂ .* v_draws)
-            end
-
-            # function defining the interior of the sigma function intergral
+            # function defining the interior of the sigma function intergral for product j and invidual i. 
             𝒯(j,i) = exp(δ[j] + μ[j,i]) / (1 + sum(exp.(δ[market_id.==market] + μ[market_id.==market,i])))
 
             # if on the matrix diagonal ∂σⱼ/∂δⱼ:
             if j == k
-                integral_interior(i) = 𝒯(j,i) * (1 - 𝒯(j,i)) 
-            end
+                #integral_interior_diag(i) = 𝒯(j,i) * (1 - 𝒯(j,i)) 
+                d(i) = 𝒯(j,i) * (1 - 𝒯(j,i)) 
+                # calculate the value by Monty Carlo integration and assign value to derivative matrix
+                #∂σ_∂δ[j,k] = mean(integral_interior_diag.(1:n_individuals))
+                ∂σ_∂δ[j,k] = mean(d.(1:n_individuals))
+            
             # if off the matrix diagnoal ∂σⱼ/∂δₖ:
-            if j != k
-                integral_interior(i) = -𝒯(j,i) * 𝒯(k,i) 
+            else
+                integral_interior_off_diag(i) = -𝒯(j,i) * 𝒯(k,i)
+                c(i) = -𝒯(j,i) * 𝒯(k,i)
+                # calculate the value by Monty Carlo integration and assign value to derivative matrix
+                #∂σ_∂δ[j,k] = mean(integral_interior_off_diag.(1:n_individuals))                
+                ∂σ_∂δ[j,k] = mean(c.(1:n_individuals))                
             end
 
-            # calculate the value by Monty Carlo integration and assign value to derivative matrix
-            # sum(integral_interior.(1:n_individuals)) * 1 / length(1:n_individuals)
-            ∂σ_∂δ[j,k] = mean(integral_interior.(1:n_individuals))
+
         end
     end
 end

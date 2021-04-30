@@ -37,8 +37,7 @@ v_50 = reshape(v_50, (20,50,5)) # 20 markets, 50 individuals per market, 5 draws
 
 
 # Load X variables. 2217x5 and 2217x6 matrices respectively
-X = Matrix(blp_data[!, ["const","hpwt","air","mpg","space"]]) # exogenous X variables
-x₁ = Matrix(blp_data[!, ["price","const","hpwt","air","mpg","space"]]) # exogenous x variables and price
+X = Matrix(blp_data[!, ["price","const","hpwt","air","mpg","space"]]) # exogenous x variables and price
 
 # Load Y variable market share. 2217x1 vector
 share = Vector(blp_data[!,"share"])
@@ -62,26 +61,27 @@ using BenchmarkTools    # for timing/benchmarking functions
 θ₂ = [0.0, 0.0, 0.0, 0.0, 0.0]
 
 # test run and timing of objective function
-Q, θ₁, ξ = demand_objective_function(θ₂,x₁,share,Z,v_50,cdid)   # returns objective function value, and θ₁ and ξ estiamtes 
-@btime demand_objective_function($θ₂,$x₁,$share,$Z,$v_50,$cdid)  
+Q, θ₁, ξ = demand_objective_function(θ₂,X,share,Z,v_50,cdid)   # returns objective function value, and θ₁ and ξ estiamtes 
+@btime demand_objective_function($θ₂,$X,$share,$Z,$v_50,$cdid)  
 # v1-3: initially 55 seconds per call, later ~20 seconds
 # v4: 6.7 seconds per call (issue with adjoints in vector of random draws)
 # v5: 2.6 seconds per call (parallelized lower level sigma loop instead of higher-level objective function) 
-# v6: 2.3 seconds per call
+# v6: 2.2 seconds per call
 
 # optimization
 # temporary function that takes only θ₂ and returns objective function value
-f(θ₂) = demand_objective_function(θ₂,x₁,share,Z,v,cdid)[1]
+f(θ₂) = demand_objective_function(θ₂,X,share,Z,v_50,cdid)[1]
 # set up optimization object
-result = optimize(f, θ₂, NelderMead(), Optim.Options(x_tol=1e-2, iterations=100, show_trace=true, show_every=10))
+result = optimize(f, θ₂, NelderMead(), Optim.Options(x_tol=1e-2, iterations=500, show_trace=true, show_every=10))
 # v4: 6400s / 107 minutes to converge at tol 1e-2
 # v5: 4700s / 79 minutes / 488 iterations / 841 calls to converge at tol 1e-2
 # v6: 4500s / 75 minutes / 488 iterations / 841 calls to converge at tol 1e-2
-# note: 100 iterations (<15 minutes) is sufficient get a close estimate.  
+# note: 100 iterations (<15 minutes) is sufficient get a close estimate.
+# fast BLP 1: 
 
 # get optimal θ₂ and θ₁ values
 θ₂ = Optim.minimizer(result)
-θ₁ = demand_objective_function(θ₂,x₁,share,Z,v,cdid)[2] # get corresponding θ₁
+θ₁ = demand_objective_function(θ₂,X,share,Z,v_50,cdid)[2] # get corresponding θ₁
 
 # other optimization diagnostics
 Optim.minimizer(result)    # optimal input values
