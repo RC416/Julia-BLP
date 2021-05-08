@@ -93,7 +93,9 @@ Optim.iterations(result)   # number of iterations needed
 
 
 # using gradient function
+include("BLP_derivatives.jl")    # module with custom BLP functions (objective function and σ())
 
+using .BLP_derivatives
 
 # anonomyous objective function 
 function f(θ₂)
@@ -110,15 +112,60 @@ function f(θ₂)
     return Q
 end
 
-function g!(θ₂, storage)
+function ∇(storage, θ₂)
     Q, θ₁, ξ, 𝒯 = demand_objective_function(θ₂,X,share,Z,v_50,cdid)
-    storage = gradient(θ₂,X,Z,v_50,cdid,ξ,𝒯)
+
+    ∇ = gradient(θ₂,X,Z,v_50,cdid,ξ,𝒯)
+    storage[1] = ∇[1]
+    storage[2] = ∇[2]
+    storage[3] = ∇[3]
+    storage[4] = ∇[4]
+    storage[5] = ∇[5]
 end
 
-result = optimize(f, g!, θ₂, LBFGS(), Optim.Options(x_tol=1e-5, iterations=500, show_trace=true, show_every=10))
-
+result = optimize(f, ∇, θ₂, LBFGS(), Optim.Options(x_tol=1e-5, iterations=500, show_trace=true, show_every=10))
+Optim.minimizer(result)
 
 
 # solution is θ₂ and θ₁ values:
 # θ₂ = [ 0.172, -2.528, 0.763, 0.589,  0.595]
 # θ₁ = [-0.427, -9.999, 2.801, 1.099, -0.430, 2.795]
+
+
+
+function f(θ₂)
+    return θ₂'θ₂
+end
+
+function ∇!(storage, θ₂)
+    storage[1] = 2 * θ₂[1] 
+    storage[2] = 2 * θ₂[2] 
+    storage[3] = 2 * θ₂[3] 
+    storage[4] = 2 * θ₂[4] 
+    storage[5] = 2 * θ₂[5]
+end
+
+result = optimize(f, ∇!, θ₂, LBFGS())
+Optim.minimizer(result)
+
+
+
+function f(x)
+    return (1.0 - x[1])^2 + 100.0 * (x[2] - x[1]^2)^2
+end
+
+function g!(G, x)
+    G[1] = -2.0 * (1.0 - x[1]) - 400.0 * (x[2] - x[1]^2) * x[1]
+    G[2] = 200.0 * (x[2] - x[1]^2)
+end
+
+function h!(H, x)
+    H[1, 1] = 2.0 - 400.0 * x[2] + 1200.0 * x[1]^2
+    H[1, 2] = -400.0 * x[1]
+    H[2, 1] = -400.0 * x[1]
+    H[2, 2] = 200.0
+end
+
+initial_x = zeros(2)
+
+optimize(f, g!, initial_x, LBFGS())
