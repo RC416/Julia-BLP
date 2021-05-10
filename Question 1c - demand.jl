@@ -123,7 +123,16 @@ function ∇(storage, θ₂)
     storage[5] = ∇[5]
 end
 
-result = optimize(f, ∇, θ₂, LBFGS(), Optim.Options(x_tol=1e-5, iterations=500, show_trace=true, show_every=10))
+result = optimize(f, ∇, θ₂, LBFGS(), Optim.Options(x_tol=1e-2, iterations=50, show_trace=true, show_every=1))
+Optim.minimizer(result)
+
+
+
+function g(θ₂)
+    Q, θ₁, ξ, 𝒯 = demand_objective_function(θ₂,X,share,Z,v_50,cdid)
+    return norm(gradient(θ₂,X,Z,v_50,cdid,ξ,𝒯))
+end
+result = optimize(g, θ₂, NelderMead(), Optim.Options(x_tol=1e-1, iterations=500, show_trace=true, show_every=10))
 Optim.minimizer(result)
 
 
@@ -133,7 +142,7 @@ Optim.minimizer(result)
 
 
 
-function f(θ₂)
+function f!(θ₂)
     return θ₂'θ₂
 end
 
@@ -145,12 +154,13 @@ function ∇!(storage, θ₂)
     storage[5] = 2 * θ₂[5]
 end
 
-result = optimize(f, ∇!, θ₂, LBFGS())
+θ₂ = [ 2000.0, -2000.0, 5000.0, 6000.0, -10000.0]
+result = optimize(f!, ∇!, θ₂, LBFGS(),Optim.Options(show_trace=true, show_every=1))
 Optim.minimizer(result)
 
 
 
-function f(x)
+function f2(x)
     return (1.0 - x[1])^2 + 100.0 * (x[2] - x[1]^2)^2
 end
 
@@ -168,4 +178,4 @@ end
 
 initial_x = zeros(2)
 
-optimize(f, g!, initial_x, LBFGS())
+optimize(f2, g!, h!, initial_x, Newton(), Optim.Options(show_trace=true, show_every=1))
