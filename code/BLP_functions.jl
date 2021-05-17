@@ -179,7 +179,3 @@ return σ, 𝒯
 end
 
 end # end module
-
-# timing of this σ and the old, explicit version.
-# @btime old__explicit_σ(δ, θ₂, v_50, X, market_id) # 112 ms
-# @btime σ(δ, θ₂, v_50, X, market_id) # 3.2 ms (35x faster)
