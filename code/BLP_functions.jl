@@ -98,11 +98,6 @@ W = inv(Z'Z) # Z'Z is optimal if ξ(θ) term is i.i.d. (normally the error term)
 # GMM objective function value
 Q = (Z'ξ)' * W * (Z'ξ)
 
-# save global value of important variables so that the gradient function can access them
-#global ξ_global = ξ
-#global δ_global = X*θ₁
-
-
 # 4. return objective function value and other useful values.
 return Q, θ₁, ξ, 𝒯
 end
