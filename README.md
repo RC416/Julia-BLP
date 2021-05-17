@@ -1,2 +1,2 @@
 # Julia-BLP
- Implementing the BLP method for random effects choice model using Julia.
+ Implementing the BLP method using Julia.
