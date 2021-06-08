@@ -18,10 +18,10 @@ Differentiate using 1) fundamental theorem of calculus (bring derivative inside 
 2) quotient rule (for the own price elasticity). 
 
 Own price elasticity:
-∂σⱼ/∂pⱼ = ∫(α + vᵢₖₚσᵛₚ) 𝒯ⱼ (1 - 𝒯ⱼ) f(vᵢ)vᵢ
+∂σⱼ/∂pⱼ = ∫(α + vᵢₖₚσᵛₚ) 𝒯ⱼ (1 - 𝒯ⱼ) f(vᵢ)dvᵢ
 
 Cross price elasticity: 
-∂σⱼ/∂pₘ = ∫ -(α + vᵢₖₚσᵛₚ) 𝒯ⱼ 𝒯ₘ f(vᵢ)vᵢ
+∂σⱼ/∂pₘ = ∫ -(α + vᵢₖₚσᵛₚ) 𝒯ⱼ 𝒯ₘ f(vᵢ)dvᵢ
 
 This module's function solves 1) the own price elasticities (diagnoal of Δ) for all 
 products and 2) the cross price elasticities for all products marketed by the same 
