@@ -1,4 +1,4 @@
-module BLP_derivatives
+module demand_derivatives
 export gradient
 
 using LinearAlgebra     # basic math
