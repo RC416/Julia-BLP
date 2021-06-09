@@ -6,7 +6,7 @@ B. Market Share Estimation Function (σ).
     Used by A. to estimate market share given observables and parameters.
 =#
 
-module BLP_functions
+module demand_functions
 export demand_objective_function
 
 using DataFrames        # for Not() and sample data
