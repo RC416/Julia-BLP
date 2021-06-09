@@ -2,8 +2,8 @@
 # function to enclose the calculation of instruments.
 # same code as Demand Side - OLS and 2SLS, package a function to save space.
 
-module BLP_instrument_module
-export BLP_instruments
+module demand_instrument_module
+export demand_instruments
 
 #= Two sets of instruments
 1. Characteristics of other products from the same company in the same market.
