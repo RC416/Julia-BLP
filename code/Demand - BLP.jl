@@ -11,13 +11,13 @@ The estimate for θ₂ is used to recover estimates of θ₁ from the objective 
 # Load key functions and packages -------------------------------------------------
 cd("C:\\Users\\Ray\\Documents\\GitHub\\Julia BLP\\Julia-BLP\\code")
 
-include("BLP_functions.jl")    # module with custom BLP functions (objective function and σ())
-include("BLP_instruments.jl")  # module to calculate BLP instruments
-include("BLP_derivatives.jl")  # module with gradient function 
+include("demand_functions.jl")    # module with custom BLP functions (objective function and σ())
+include("demand_instruments.jl")  # module to calculate BLP instruments
+include("demand_derivatives.jl")  # module with gradient function 
 
-using .BLP_functions
-using .BLP_instrument_module
-using .BLP_derivatives
+using .demand_functions
+using .demand_instrument_module
+using .demand_derivatives
 
 using CSV               # loading data
 using DataFrames        # loading data

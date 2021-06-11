@@ -6,7 +6,7 @@ B. Market Share Estimation Function (σ).
     Used by A. to estimate market share given observables and parameters.
 =#
 
-module BLP_functions
+module demand_functions
 export demand_objective_function
 
 using DataFrames        # for Not() and sample data
@@ -52,7 +52,7 @@ function demand_objective_function(θ₂,X,s,Z,v,market_id)
 
 # contraction mapping parameters
 tolerance = 1e-6                      # Matlab code uses 1e-6 or 1e-9
-largest_dif = tolerance + 1           # track difference from first value. initialze at a value above tolerance
+largest_dif = Inf                     # track difference from first value. initialze at a value above tolerance
 max_iterations = 1000                 # reasonable limit 
 counter = 0                           # track iterations 
 
