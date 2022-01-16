@@ -58,7 +58,7 @@ Y = log.(share) - log.(outshr) # market share normalized by outshare
 𝚺 = Diagonal(ϵ*ϵ')
 Var_θ = inv(x₁'x₁)*(x₁'*𝚺*x₁)*inv(x₁'x₁)
 # get standard errors
-SE_θ = sqrt.(Diagonal(Var_θ))
+SE_θ = sqrt.(diag(Var_θ))
 
 # approximate solution
 # θ₁   = [-0.089 -11.352  0.526  0.016  0.501  2.740]
@@ -127,7 +127,7 @@ Y = log.(share) - log.(outshr)
 𝚺_IV = Diagonal(ϵ_IV*ϵ_IV')     # residual variance
 
 Var_θ_IV = inv(x₁'*𝛀*x₁) * (x₁'*𝛀*𝚺_IV*𝛀*x₁) * inv(x₁'*𝛀*x₁)
-SE_θ_IV = sqrt.(Diagonal(Var_θ_IV))
+SE_θ_IV = sqrt.(diag(Var_θ_IV))
 
 # approximate solution
 # θ₁_IV   = [-0.139 -11.154  1.831  0.555  0.404  0.270]
