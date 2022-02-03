@@ -1,6 +1,6 @@
 #= BLP instruments =#
 # function to enclose the calculation of instruments.
-# same code as Demand Side - OLS and 2SLS, package a function to save space.
+# same code as Demand Side - OLS and 2SLS, packaged as a function to save space.
 
 module demand_instrument_module
 export demand_instruments
