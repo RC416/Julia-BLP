@@ -65,7 +65,7 @@ SE_θ = sqrt.(diag(Var_θ))
 # SE_θ = [ 0.004   0.377  0.297  0.071  0.065  0.156]
 
 # ------------------------------------------------------------------------------------
-# Part 2 - Estimationg with 2SLC
+# Part 2 - Estimating with 2SLC
 
 # construct the BLP instruments
 
