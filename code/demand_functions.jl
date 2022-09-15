@@ -120,7 +120,7 @@ Key steps:
 2. Using given δ and μ, calculate numerator of σⱼ: exp(δⱼ + μⱼᵢ)
 3. Calculate the sum term in the denominator. Build a matrix 2217x50 of
 demonominator terms for each individual within a given market.
-4. Use divide numerator from 2. by denominator from 3. to get individual shares
+4. Divide numerator from 2. by denominator from 3. to get individual shares
 for each product across the 50 individuals.
 5. Calculate the mean share across the 50 individuals (equivalent to Monty Carlo integration).
 
